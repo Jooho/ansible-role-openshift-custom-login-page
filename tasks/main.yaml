@@ -1,0 +1,77 @@
+---
+# tasks file for ansible-role-openshift-custom-login-page
+    
+  - name: Backup original master-config.yaml file
+    copy: src="{{openshift_master_conf_dir}}/master-config.yaml" dest="{{openshift_master_conf_dir}}/master-config.yaml" backup="yes"
+    delegate_to: "{{groups.masters[0]}}"
+
+  - name: Check if image exist 
+    stat: "path={{resized_img}} "
+    delegate_to: "{{groups.masters[0]}}"
+    register: stat_resized_img_exist
+
+  - name: if the resized_img does not exit,it fail
+    fail: msg="Resized image does not exist, please check it"
+    when: stat_resized_img_exist.stat.exists == false
+
+  - name: Create new template login page
+    shell: oadm create-login-template > {{temp_dir}}/login-template.html
+    delegate_to: "{{groups.masters[0]}}"
+    
+  - name: Download default login page
+    shell: "curl -k https://{{master_url}}/login > {{temp_dir}}/new-login.html"
+    delegate_to: "{{groups.masters[0]}}"
+
+  - name: Copy configure_new_login_html.sh to playbook folder locally
+    template: src=configure_new_login_html.sh.j2  dest={{temp_dir}}/configure_new_login_html.sh  mode=0777
+    delegate_to: "{{groups.masters[0]}}"
+
+  - name: Copy error_tag.txt to playbook folder locally
+    copy: src=error_tag.txt  dest={{temp_dir}}/.  mode=0777
+    delegate_to: "{{groups.masters[0]}}"
+
+  - name: Copy form_tag.txt to playbook folder locally
+    copy: src=form_tag.txt  dest={{temp_dir}}/.  mode=0777
+    delegate_to: "{{groups.masters[0]}}"
+
+  - name: Merge default and new template login page
+    shell: "{{temp_dir}}/configure_new_login_html.sh {{temp_dir}}/new-login.html "
+    delegate_to: "{{groups.masters[0]}}"
+
+  - name: Merge default and new template login page
+    copy: src={{temp_dir}}/new-login.html  dest={{openshift_master_conf_dir}}/. force=yes
+    delegate_to: "{{groups.masters[0]}}"
+
+  - name: Copy new login html file to /etc/origin/master
+    copy: src={{temp_dir}}/new-login.html  dest={{login_html_path}}/. force=yes
+    delegate_to: "{{groups.masters[0]}}"
+
+  - name: login configuration txt file to /etc/origin/master
+    template: src=login_conf.txt.j2 dest={{login_html_path}}/login_conf.txt
+    delegate_to: "{{groups.masters[0]}}"
+
+  - name: check the configuration exist in master-config.yaml
+    shell:  grep new-login.html /etc/origin/master/master-config.yaml|wc -l
+    delegate_to: "{{groups.masters[0]}}"
+    register: login_conf_exist
+
+  - name: Configure master-config.xml to load new html
+    shell: sed -e "$(grep -n oauthConfig {{openshift_master_conf_dir}}/master-config.yaml |cut -d':' -f1)r {{login_html_path}}/login_conf.txt" -i {{openshift_master_conf_dir}}/master-config.yaml
+    when: "{{login_conf_exist.stdout}} == 0 " 
+    delegate_to: "{{groups.masters[0]}}"
+
+  - name: Clean temp files in local
+    file: path={{item}} state=absent
+    with_items:
+        - "{{temp_dir}}/new-login.html"
+        - "{{temp_dir}}/login-template.html"
+        - "{{temp_dir}}/{{resized_img}}"
+        - "{{temp_dir}}/error_tag.txt"
+        - "{{temp_dir}}/form_tag.txt"
+        - "{{temp_dir}}/configure_new_login_html.sh"
+    delegate_to: "{{groups.masters[0]}}"
+  
+#  - name: Clean temp files on remote
+#    file: path={{item}} state=absent
+#    with_items:
+##        - "{{login_html_path}}/login_conf.txt" 

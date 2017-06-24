@@ -1,0 +1,15 @@
+galaxy_info:
+  author: jooho lee
+  description: This role help create a custom login page of Openshift.  
+  company: your company (optional)
+  license: BSD/MIT
+  platforms:
+  - name: Fedora
+    versions:
+  galaxy_tags:
+  - openshift
+  - custom login page
+  - login logo
+
+dependencies: [Jooho.image-resize]
+
