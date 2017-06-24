@@ -1,9 +1,12 @@
 ---
 # tasks file for ansible-role-openshift-custom-login-page
     
+  - name: Get timestamp
+    local_action: command date +"%Y%m%d_%H%M%S"
+    register: date
+
   - name: Backup original master-config.yaml file
-    copy: src="{{openshift_master_conf_dir}}/master-config.yaml" dest="{{openshift_master_conf_dir}}/master-config.yaml" backup="yes"
-    delegate_to: "{{groups.masters[0]}}"
+    copy: src="{{openshift_master_conf_dir}}/master-config.yaml" dest="{{openshift_master_conf_dir}}/master-config.yaml_{{date.stdout}}" backup="yes"
 
   - name: Check if image exist 
     stat: "path={{logo_img}} "
@@ -16,7 +19,9 @@
 
   - name: Create login page dir if it does not exist
     file: "path={{login_html_dir}} state=directory"
-    delegate_to: "{{groups.masters[0]}}"
+
+  - name: Create temp dir if it does not exist
+    file: "path={{temp_dir}} state=directory"
 
   - name: Create new template login page
     shell: oadm create-login-template > {{temp_dir}}/login-template.html
@@ -64,6 +69,16 @@
     when: "{{login_conf_exist.stdout}} == 0 " 
     delegate_to: "{{groups.masters[0]}}"
 
+  - name: Copy new master-config.yaml to all master servers
+    synchronize:  src={{openshift_master_conf_dir}}/master-config.yaml dest={{openshift_master_conf_dir}}/master-config.yaml
+    delegate_to: "{{groups.masters[0]}}"
+    when: "{{inventory_hostname != groups.masters[0]}}"
+
+  - name: Copy new-login.html to all master servers
+    synchronize: src={{login_html_dir}}/new-login.html dest={{login_html_dir}}/new-login.html
+    delegate_to: "{{groups.masters[0]}}"
+    when: "{{inventory_hostname != groups.masters[0]}}"
+
   - name: Clean temp files in local
     file: path={{item}} state=absent
     with_items:
@@ -73,9 +88,10 @@
         - "{{temp_dir}}/error_tag.txt"
         - "{{temp_dir}}/form_tag.txt"
         - "{{temp_dir}}/configure_new_login_html.sh"
+        - "{{login_html_dir}}/login_conf.txt"
     delegate_to: "{{groups.masters[0]}}"
   
-#  - name: Clean temp files on remote
-#    file: path={{item}} state=absent
-#    with_items:
-##        - "{{login_html_dir}}/login_conf.txt" 
+  - name: Clean temp files on remote
+    file: path={{item}} state=absent
+    with_items:
+        - "{{login_html_dir}}/login_conf.txt" 
