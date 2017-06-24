@@ -6,13 +6,13 @@
     delegate_to: "{{groups.masters[0]}}"
 
   - name: Check if image exist 
-    stat: "path={{resized_img}} "
+    stat: "path={{logo_img}} "
     delegate_to: "{{groups.masters[0]}}"
-    register: stat_resized_img_exist
+    register: stat_logo_img_exist
 
-  - name: if the resized_img does not exit,it fail
+  - name: if the logo_img does not exit,it fail
     fail: msg="Resized image does not exist, please check it"
-    when: stat_resized_img_exist.stat.exists == false
+    when: stat_logo_img_exist.stat.exists == false
 
   - name: Create new template login page
     shell: oadm create-login-template > {{temp_dir}}/login-template.html
@@ -65,7 +65,7 @@
     with_items:
         - "{{temp_dir}}/new-login.html"
         - "{{temp_dir}}/login-template.html"
-        - "{{temp_dir}}/{{resized_img}}"
+        - "{{temp_dir}}/{{logo_img}}"
         - "{{temp_dir}}/error_tag.txt"
         - "{{temp_dir}}/form_tag.txt"
         - "{{temp_dir}}/configure_new_login_html.sh"

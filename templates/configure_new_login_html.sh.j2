@@ -30,9 +30,9 @@ sed -e "${password_tag_line}s/name=\"password\"/name=\"\{\{ .Names.Password \}\}
 # Convert new image to base64 unicode and replace it of defualt one.
 span_badge_line=$(get_line_num 'span id=\"badge\"') 
 img_line=$(( $span_badge_line + 1 ))
-img_ext=$(echo {{resized_img}} | awk -F"." '{print $NF}')
+img_ext=$(echo {{logo_img}} | awk -F"." '{print $NF}')
 
-base64_img="<img src=\"$(echo "data:image/${img_ext};base64,$(base64 -w 0 {{resized_img}})")\" alt=\"new logo\"/>" 
+base64_img="<img src=\"$(echo "data:image/${img_ext};base64,$(base64 -w 0 {{logo_img}})")\" alt=\"new logo\"/>" 
 
 sed -e "$img_line,1d" -i $login_html_file
 sed -e "$img_line i $base64_img" -i $login_html_file

@@ -11,5 +11,4 @@ galaxy_info:
   - openshift
   - custom
   - login
-dependencies: [Jooho.image-resize]
 
