@@ -14,6 +14,10 @@
     fail: msg="Resized image does not exist, please check it"
     when: stat_logo_img_exist.stat.exists == false
 
+  - name: Create login page dir if it does not exist
+    file: "path={{logo_html_dir}} state=directory"
+    delegate_to: "{{groups.masters[0]}}"
+
   - name: Create new template login page
     shell: oadm create-login-template > {{temp_dir}}/login-template.html
     delegate_to: "{{groups.masters[0]}}"
@@ -43,11 +47,11 @@
     delegate_to: "{{groups.masters[0]}}"
 
   - name: Copy new login html file to /etc/origin/master
-    copy: src={{temp_dir}}/new-login.html  dest={{login_html_path}}/. force=yes
+    copy: src={{temp_dir}}/new-login.html  dest={{login_html_dir}}/. force=yes
     delegate_to: "{{groups.masters[0]}}"
 
   - name: login configuration txt file to /etc/origin/master
-    template: src=login_conf.txt.j2 dest={{login_html_path}}/login_conf.txt
+    template: src=login_conf.txt.j2 dest={{login_html_dir}}/login_conf.txt
     delegate_to: "{{groups.masters[0]}}"
 
   - name: check the configuration exist in master-config.yaml
@@ -56,7 +60,7 @@
     register: login_conf_exist
 
   - name: Configure master-config.xml to load new html
-    shell: sed -e "$(grep -n oauthConfig {{openshift_master_conf_dir}}/master-config.yaml |cut -d':' -f1)r {{login_html_path}}/login_conf.txt" -i {{openshift_master_conf_dir}}/master-config.yaml
+    shell: sed -e "$(grep -n oauthConfig {{openshift_master_conf_dir}}/master-config.yaml |cut -d':' -f1)r {{login_html_dir}}/login_conf.txt" -i {{openshift_master_conf_dir}}/master-config.yaml
     when: "{{login_conf_exist.stdout}} == 0 " 
     delegate_to: "{{groups.masters[0]}}"
 
@@ -74,4 +78,4 @@
 #  - name: Clean temp files on remote
 #    file: path={{item}} state=absent
 #    with_items:
-##        - "{{login_html_path}}/login_conf.txt" 
+##        - "{{login_html_dir}}/login_conf.txt" 
