@@ -22,7 +22,7 @@ Role Variables
 Dependencies
 ------------
 
-Jooho.image-resize 
+None
 
 Example Execute Command
 -----------------------
@@ -37,15 +37,9 @@ Example Playbook
 - name: Example Playbook
   hosts: masters
   gather_facts: false
-  
-  pre_tasks:
-  - name: Shared values in roles
-    set_fact:
-       output_img_file: /tmp/sample-openshift-ori.png
 
    roles:
-      - { role: resize_image, output_img: "{{output_img_file}}", force: true}
-      - { role: configure_login_logo, resized_img: "{{output_img_file}}", master_url: "master1.example.com:8443", login_html_folder: "/etc/origin/master/stylesheet/images" }
+      - { role: configure_login_logo, resized_img: "/tmp/sample-openshift-ori.png", master_url: "master1.example.com:8443", login_html_folder: "/etc/origin/master/stylesheet/images" }
 
 ~~~
 
