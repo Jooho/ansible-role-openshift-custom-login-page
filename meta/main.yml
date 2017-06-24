@@ -8,8 +8,7 @@ galaxy_info:
     versions:
   galaxy_tags:
   - openshift
-  - custom login page
-  - login logo
-
+  - custom
+  - login
 dependencies: [Jooho.image-resize]
 
