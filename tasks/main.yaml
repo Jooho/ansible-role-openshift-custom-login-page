@@ -15,7 +15,7 @@
     when: stat_logo_img_exist.stat.exists == false
 
   - name: Create login page dir if it does not exist
-    file: "path={{logo_html_dir}} state=directory"
+    file: "path={{login_html_dir}} state=directory"
     delegate_to: "{{groups.masters[0]}}"
 
   - name: Create new template login page
