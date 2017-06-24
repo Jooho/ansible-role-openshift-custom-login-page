@@ -35,7 +35,7 @@ Example Playbook
   gather_facts: false
 
    roles:
-      - { role: configure_login_logo, logo_img: "/tmp/sample-openshift-ori.png", master_url: "master1.example.com:8443", login_html_folder: "/etc/origin/master/stylesheet/images" }
+      - { role: configure_login_logo, logo_img: "/tmp/sample-openshift-ori.png", master_url: "master1.example.com:8443", login_html_dir: "/etc/origin/master/stylesheet/images" }
 
 ~~~
 
