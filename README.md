@@ -35,7 +35,7 @@ Example Playbook
   gather_facts: false
 
    roles:
-      - { role: configure_login_logo, logo_img: "/tmp/sample-openshift-ori.png", master_url: "master1.example.com:8443", login_html_dir: "/etc/origin/master/stylesheet/images" }
+      - { role: Jooho.openshift_custom_login_page, logo_img: "logo.png", master_url: "master1.example.com:8443", login_html_dir: "/etc/origin/master" }
 
 ~~~
 
@@ -47,5 +47,5 @@ BSD/MIT
 Author Information
 ------------------
 
-This role was created in 2016 by [Jooho Lee](http://github.com/jooho).
+This role was created in 2017 by [Jooho Lee](http://github.com/jooho).
 
