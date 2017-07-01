@@ -33,7 +33,10 @@
     run_once: true
     
   - name: Download default login page
-    shell: "curl -k https://{{master_url}}/login > {{temp_dir}}/new-login.html"
+    get_url:
+      url: https://{{master_url}}/login 
+      dest: {{temp_dir}}/new-login.html
+      validate_certs: no
     delegate_to: "{{groups.masters[0]}}"
     run_once: true
 
