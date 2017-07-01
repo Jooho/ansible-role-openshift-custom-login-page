@@ -22,7 +22,6 @@
 
   - name: Create login page dir if it does not exist
     file: "path={{login_html_dir}} state=directory"
-    run_once: true
 
   - name: Create temp dir if it does not exist
     file: "path={{temp_dir}} state=directory"
