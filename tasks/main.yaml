@@ -61,7 +61,7 @@
     run_once: true
 
   - name: Copy new login html file to /etc/origin/master
-    copy: src={{temp_dir}}/new-login.html  dest={{login_html_dir}}/. force=yes remote_src="true"
+    copy: src={{temp_dir}}/new-login.html  dest={{login_html_dir}}/. overwrite_force=yes remote_src="true"
     delegate_to: "{{groups.masters[0]}}"
     run_once: true
 
