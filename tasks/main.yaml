@@ -7,7 +7,7 @@
     run_once: true
 
   - name: Backup original master-config.yaml file
-    copy: src="{{openshift_master_conf_dir}}/master-config.yaml" dest="{{openshift_master_conf_dir}}/master-config.yaml_{{date.stdout}}" backup="yes"
+    copy: src="{{openshift_master_conf_dir}}/master-config.yaml" dest="{{openshift_master_conf_dir}}/master-config.yaml_{{date.stdout}}" backup="yes" remote_src="true"
 
   - name: Check if image exist 
     stat: "path={{logo_img}} "
@@ -60,13 +60,8 @@
     delegate_to: "{{groups.masters[0]}}"
     run_once: true
 
-  - name: Merge default and new template login page
-    copy: src={{temp_dir}}/new-login.html  dest={{openshift_master_conf_dir}}/. force=yes
-    delegate_to: "{{groups.masters[0]}}"
-    run_once: true
-
   - name: Copy new login html file to /etc/origin/master
-    copy: src={{temp_dir}}/new-login.html  dest={{login_html_dir}}/. force=yes
+    copy: src={{temp_dir}}/new-login.html  dest={{login_html_dir}}/. force=yes remote_src="true"
     delegate_to: "{{groups.masters[0]}}"
     run_once: true
 
@@ -83,34 +78,29 @@
 
   - name: Configure master-config.xml to load new html
     shell: sed -e "$(grep -n oauthConfig {{openshift_master_conf_dir}}/master-config.yaml |cut -d':' -f1)r {{login_html_dir}}/login_conf.txt" -i {{openshift_master_conf_dir}}/master-config.yaml
-    when: "{{login_conf_exist.stdout}} == 0 " 
+    when: login_conf_exist.stdout == '0'
     delegate_to: "{{groups.masters[0]}}"
     run_once: true
 
   - name: Copy new master-config.yaml to all master servers
     synchronize:  src={{openshift_master_conf_dir}}/master-config.yaml dest={{openshift_master_conf_dir}}/master-config.yaml
     delegate_to: "{{groups.masters[0]}}"
-    when: "{{inventory_hostname != groups.masters[0]}}"
+    when: inventory_hostname != groups.masters[0] and login_conf_exist.stdout == '0'
 
   - name: Copy new-login.html to all master servers
     synchronize: src={{login_html_dir}}/new-login.html dest={{login_html_dir}}/new-login.html
     delegate_to: "{{groups.masters[0]}}"
-    when: "{{inventory_hostname != groups.masters[0]}}"
+    when: inventory_hostname != groups.masters[0] and login_conf_exist.stdout == '0'
 
-  - name: Clean temp files in local
+  - name: Clean temp files in master1
     file: path={{item}} state=absent
     with_items:
         - "{{temp_dir}}/new-login.html"
         - "{{temp_dir}}/login-template.html"
-        - "{{temp_dir}}/{{logo_img}}"
+        - "{{temp_dir}}/{{logo_img | basename}}"
         - "{{temp_dir}}/error_tag.txt"
         - "{{temp_dir}}/form_tag.txt"
         - "{{temp_dir}}/configure_new_login_html.sh"
         - "{{login_html_dir}}/login_conf.txt"
     delegate_to: "{{groups.masters[0]}}"
     run_once: true
-  
-  - name: Clean temp files on remote
-    file: path={{item}} state=absent
-    with_items:
-        - "{{login_html_dir}}/login_conf.txt" 
