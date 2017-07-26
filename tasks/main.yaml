@@ -33,10 +33,7 @@
     run_once: true
     
   - name: Download default login page
-    get_url:
-      url: "https://{{master_url}}/login "
-      dest: "{{temp_dir}}/new-login.html"
-      validate_certs: no
+    copy: src="default-login.html" dest="{{temp_dir}}/new-login.html"
     delegate_to: "{{groups.masters[0]}}"
     run_once: true
 
@@ -61,7 +58,7 @@
     run_once: true
 
   - name: Copy new login html file to /etc/origin/master
-    copy: src={{temp_dir}}/new-login.html  dest={{login_html_dir}}/. overwrite_force=yes remote_src="true"
+    copy: src={{temp_dir}}/new-login.html  dest={{login_html_dir}}/. force=yes remote_src="true"
     delegate_to: "{{groups.masters[0]}}"
     run_once: true
 
