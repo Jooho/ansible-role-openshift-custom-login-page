@@ -15,59 +15,79 @@
     register: stat_logo_img_exist
     run_once: true
 
-  - name: if the logo_img does not exit,it fail
+  - name: if the logo_img does not exit,it fails
     fail: msg="logo image does not exist, please check it"
     when: stat_logo_img_exist.stat.exists == false
-    delegate_to: "{{groups.masters[0]}}"
     run_once: true
-
-  - name: fetch logo_image on local to copy it to all masters.
-    fetch:  
-      src: "{{logo_img}}"
-      dest: "{{logo_img}}"
-      flat: yes
-    delegate_to: "{{groups.masters[0]}}"
-
-  - name: copy logo image to all masters
-    copy: "src={{logo_img}} dest={{logo_img}} "
 
   - name: Create login page dir if it does not exist
     file: "path={{login_html_dir}} state=directory"
 
   - name: Create temp dir if it does not exist
     file: "path={{temp_dir}} state=directory"
+    run_once: true
 
   - name: Create new template login page
     shell: oadm create-login-template > {{temp_dir}}/login-template.html
+    delegate_to: "{{groups.masters[0]}}"
+    run_once: true
     
   - name: Download default login page
     copy: src="default-login.html" dest="{{temp_dir}}/new-login.html"
+    delegate_to: "{{groups.masters[0]}}"
+    run_once: true
 
   - name: Copy configure_new_login_html.sh to playbook folder locally
     template: src=configure_new_login_html.sh.j2  dest={{temp_dir}}/configure_new_login_html.sh  mode=0777
+    delegate_to: "{{groups.masters[0]}}"
+    run_once: true
 
   - name: Copy error_tag.txt to playbook folder locally
     copy: src=error_tag.txt  dest={{temp_dir}}/.  mode=0777
+    delegate_to: "{{groups.masters[0]}}"
+    run_once: true
 
   - name: Copy form_tag.txt to playbook folder locally
     copy: src=form_tag.txt  dest={{temp_dir}}/.  mode=0777
+    delegate_to: "{{groups.masters[0]}}"
+    run_once: true
 
   - name: Merge default and new template login page
     shell: "{{temp_dir}}/configure_new_login_html.sh {{temp_dir}}/new-login.html "
+    delegate_to: "{{groups.masters[0]}}"
+    run_once: true
 
   - name: Copy new login html file to /etc/origin/master
     copy: src={{temp_dir}}/new-login.html  dest={{login_html_dir}}/. force=yes remote_src="true"
+    delegate_to: "{{groups.masters[0]}}"
+    run_once: true
 
   - name: login configuration txt file to /etc/origin/master
     template: src=login_conf.txt.j2 dest={{login_html_dir}}/login_conf.txt
+    delegate_to: "{{groups.masters[0]}}"
+    run_once: true
 
   - name: check the configuration exist in master-config.yaml
     shell:  grep new-login.html /etc/origin/master/master-config.yaml|wc -l
+    delegate_to: "{{groups.masters[0]}}"
     register: login_conf_exist
+    run_once: true
 
   - name: Configure master-config.xml to load new html
     shell: sed -e "$(grep -n oauthConfig {{openshift_master_conf_dir}}/master-config.yaml |cut -d':' -f1)r {{login_html_dir}}/login_conf.txt" -i {{openshift_master_conf_dir}}/master-config.yaml
     when: login_conf_exist.stdout == '0'
+    delegate_to: "{{groups.masters[0]}}"
+    run_once: true
+
+  - name: Copy new master-config.yaml to all master servers
+    synchronize:  src={{openshift_master_conf_dir}}/master-config.yaml dest={{openshift_master_conf_dir}}/master-config.yaml
+    delegate_to: "{{groups.masters[0]}}"
+    when: inventory_hostname != groups.masters[0] and login_conf_exist.stdout == '0'
+
+  - name: Copy new-login.html to all master servers
+    synchronize: src={{login_html_dir}}/new-login.html dest={{login_html_dir}}/new-login.html
+    delegate_to: "{{groups.masters[0]}}"
+    when: inventory_hostname != groups.masters[0] and login_conf_exist.stdout == '0'
 
   - name: Clean temp files in master1
     file: path={{item}} state=absent
@@ -79,4 +99,5 @@
         - "{{temp_dir}}/form_tag.txt"
         - "{{temp_dir}}/configure_new_login_html.sh"
         - "{{login_html_dir}}/login_conf.txt"
-
+    delegate_to: "{{groups.masters[0]}}"
+    run_once: true
