@@ -80,3 +80,12 @@
         - "{{temp_dir}}/configure_new_login_html.sh"
         - "{{login_html_dir}}/login_conf.txt"
 
+  - name: Restart Master Daemon
+    block:
+      - systemd: state=restarted name=atomic-openshift-master
+        when: groups['masters']|length|int == 1
+
+      - systemd: state=restarted name=atomic-openshift-master-api
+        when: groups['masters']|length|int > 1
+    when: restart_master
+  
