@@ -8,6 +8,7 @@
 
   - name: Backup original master-config.yaml file
     copy: src="{{openshift_master_conf_dir}}/master-config.yaml" dest="{{openshift_master_conf_dir}}/master-config.yaml_{{date.stdout}}" backup="yes" remote_src="true"
+    become: yes
 
   - name: Check if image exist 
     stat: "path={{logo_img}} "
@@ -30,44 +31,57 @@
 
   - name: copy logo image to all masters
     copy: "src={{logo_img}} dest={{logo_img}} "
+    become: yes
 
   - name: Create login page dir if it does not exist
     file: "path={{login_html_dir}} state=directory"
+    become: yes
 
   - name: Create temp dir if it does not exist
     file: "path={{temp_dir}} state=directory"
+    become: yes
 
   - name: Create new template login page
     shell: oadm create-login-template > {{temp_dir}}/login-template.html
+    become: yes
     
   - name: Download default login page
     copy: src="default-login.html" dest="{{temp_dir}}/new-login.html"
+    become: yes
 
   - name: Copy configure_new_login_html.sh to playbook folder locally
     template: src=configure_new_login_html.sh.j2  dest={{temp_dir}}/configure_new_login_html.sh  mode=0777
+    become: yes
 
   - name: Copy error_tag.txt to playbook folder locally
     copy: src=error_tag.txt  dest={{temp_dir}}/.  mode=0777
+    become: yes
 
   - name: Copy form_tag.txt to playbook folder locally
     copy: src=form_tag.txt  dest={{temp_dir}}/.  mode=0777
+    become: yes
 
   - name: Merge default and new template login page
     shell: "{{temp_dir}}/configure_new_login_html.sh {{temp_dir}}/new-login.html "
+    become: yes
 
   - name: Copy new login html file to /etc/origin/master
     copy: src={{temp_dir}}/new-login.html  dest={{login_html_dir}}/. force=yes remote_src="true"
+    become: yes
 
   - name: login configuration txt file to /etc/origin/master
     template: src=login_conf.txt.j2 dest={{login_html_dir}}/login_conf.txt
+    become: yes
 
   - name: check the configuration exist in master-config.yaml
     shell:  grep new-login.html /etc/origin/master/master-config.yaml|wc -l
     register: login_conf_exist
+    become: yes
 
   - name: Configure master-config.xml to load new html
     shell: sed -e "$(grep -n oauthConfig {{openshift_master_conf_dir}}/master-config.yaml |cut -d':' -f1)r {{login_html_dir}}/login_conf.txt" -i {{openshift_master_conf_dir}}/master-config.yaml
     when: login_conf_exist.stdout == '0'
+    become: yes
 
   - name: Clean temp files in master1
     file: path={{item}} state=absent
@@ -79,6 +93,7 @@
         - "{{temp_dir}}/form_tag.txt"
         - "{{temp_dir}}/configure_new_login_html.sh"
         - "{{login_html_dir}}/login_conf.txt"
+    become: yes
 
   - name: Restart Master Daemon
     block:
@@ -88,4 +103,5 @@
       - systemd: state=restarted name=atomic-openshift-master-api
         when: groups['masters']|length|int > 1
     when: restart_master
+    become: yes
   
